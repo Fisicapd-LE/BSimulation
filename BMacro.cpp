@@ -1,7 +1,7 @@
 // #include "Decay.h"
 
 #include <vector>
-#include "../git/g-2Simulation/src/Utilities/Vector3D.h"
+#include "../g-2Simulation/src/Utilities/Vector3D.h"
 #include <cmath>
 #include <iostream>
 
@@ -41,9 +41,9 @@ int BMacro()
   double zsyst = 10.;
   
   //impostazione delle dimensioni del solenoide (funziona solo con parallelepipedo non ruotato)
-  double xsol = 1.;
-  double ysol = 1.;
-  double zsol = 1.;
+  double xsol = 5.;
+  double ysol = 5.;
+  double zsol = 5.;
   
   //impostazione della griglia, indica in pratica lo step tra due punti della griglia stessa
   double delta = 0.1;
@@ -178,7 +178,7 @@ int BMacro()
   //si ricorda che si sfrutta la simmetria del problema e si studia solo un quarto del sistema,
   //cioè la parte che va da z = 0 a z = zsyst * .5 e da y = 0 a y = ysyst *.5  e da x = 0 a x = xsyst*.5
 
-  
+  TH2F * pot_vett_iniz = new TH2F("pot_vett_iniz", "Pot Vett iniz", xsteps+2, x_border-1, xsteps+1, ysteps+2, y_border-1, ysteps+1);
   //inizializzazione del potenziale vettore
   if (verboso) cout << "Inizio inizializzazione potenziale vettore..." << endl;
   starting_point  = {0.,0.,0.};		//inizia dal centro del sistema
@@ -193,7 +193,7 @@ int BMacro()
 //   PositionToGrid(& walking_point, x_border, y_border, z_border);
   
   //set del potenziale vettore all'interno del solenoide
-  double mu_0 = 100.;
+  double mu_0 = 1.;
   while(walking_point.x < xsol*.5)		//ciclo sulla lunghezza del solenoide
   {
     walking_point.z = starting_point.z;
@@ -204,11 +204,13 @@ int BMacro()
       {
 	PositionToGrid(& walking_point, xindex, yindex, zindex);
 	modify_inloop = & potential[xindex][yindex][zindex];
-	rho = mu_0 * .5 * sqrt(walking_point.x * walking_point.x + walking_point.y * walking_point.y);
-	if(walking_point.z == 0) theta = 0;				//serve a evitare infiniti
-	else theta = atan(walking_point.y/walking_point.z);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
-	* modify_inloop = {0., rho * sin(theta), rho * cos(theta)};
-// 	if(verboso) cout << modify_inloop->y << " " << modify_inloop->z << endl;
+	rho = mu_0 * current * .5 * sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);
+	if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
+	else theta = atan(walking_point.z/walking_point.y);		//CAMBIATO ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
+	* modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};
+//  	if(verboso) cout << modify_inloop->y << " " << modify_inloop->z << endl;
+	pot_vett_iniz->SetBinContent(yindex+2, zindex+2, theta); /////////////
+	if(verboso && modify_inloop->z > 10000 ) cout << modify_inloop->z << " at " << xindex << " " << yindex << " " << zindex << " ; " << rho << " " << theta << endl;
 	yindex++;
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug1++;
@@ -260,11 +262,15 @@ int BMacro()
       {
 	PositionToGrid(& walking_point, xindex, yindex, zindex);
 	modify_inloop = & potential[xindex][yindex][zindex];
-	rho = mu_0 * .5 * zsol * .5 * zsol * .5 / (sqrt(walking_point.x * walking_point.x + walking_point.y * walking_point.y)+0.0001);
-	if(walking_point.z == 0) theta = 0;				//serve a evitare infiniti
-	else theta = atan(walking_point.y/walking_point.z);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
-	* modify_inloop = {0., rho * sin(theta), rho * cos(theta)};
+	rho = mu_0 * current * .5 * zsol * .5 * zsol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);
+	if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
+	else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
+	* modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};
+// 	if(walking_point.x == 0 or walking_point.y == 0 or walking_point.z == 0) modify_inloop->z = 0;
 // 	if(verboso) cout << modify_inloop->y << " " << modify_inloop->z << endl;
+// 	if(verboso && modify_inloop->z > 10000 ) cout << modify_inloop->z << " at " << xindex << " " << yindex << " " << zindex << " ; " << rho << " " << theta << endl;
+	pot_vett_iniz->SetBinContent(yindex+2, zindex+2, theta); /////////////
+	
 	yindex++;
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug1++;
@@ -315,11 +321,13 @@ int BMacro()
       {
 	PositionToGrid(& walking_point, xindex, yindex, zindex);
 	modify_inloop = & potential[xindex][yindex][zindex];
-	rho = mu_0 * .5 * ysol * .5 * ysol * .5 / (sqrt(walking_point.x * walking_point.x + walking_point.y * walking_point.y) + 0.0001);
-	if(walking_point.z == 0) theta = 0;				//serve a evitare infiniti
-	theta = atan(walking_point.y/walking_point.z);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
-	* modify_inloop = {0., rho * sin(theta), rho * cos(theta)};
+	rho = mu_0 * current * .5 * ysol * .5 * ysol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);
+	if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
+	else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
+	* modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};
 // 	if(verboso) cout << modify_inloop->y << " " << modify_inloop->z << endl;
+	pot_vett_iniz->SetBinContent(yindex+2, zindex+2, theta); /////////////
+	if(verboso && modify_inloop->z > 10000 ) cout << modify_inloop->z << " at " << xindex << " " << yindex << " " << zindex << " ; " << rho << " " << theta << endl;
 	yindex++;
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug1++;
@@ -353,7 +361,7 @@ int BMacro()
   debug2 = 0;
   debug3 = 0;
   
-  //set del potenziale vettore all'esterno del solenoide !!ACCANTO!!
+  //set del potenziale vettore all'esterno del solenoide !!TRA ALTO E DI LATO, IL QUADRATONE!!
   
   
   starting_point = {0., ysol * .5, zsol * .5};	//inizia dal'angolino del solenoide
@@ -370,11 +378,13 @@ int BMacro()
       {
 	PositionToGrid(& walking_point, xindex, yindex, zindex);
 	modify_inloop = & potential[xindex][yindex][zindex];
-	rho = mu_0 * .5 * zsol * .5 * ysol * .5 / (sqrt(walking_point.x * walking_point.x + walking_point.y * walking_point.y) + 0.0001);	//ibrido tra il sopra e il di lato
-	if(walking_point.z == 0) theta = 0;				//serve a evitare infiniti
-	else theta = atan(walking_point.y/walking_point.z);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
-	* modify_inloop = {0., rho * sin(theta), rho * cos(theta)};
+	rho = mu_0 * current * .5 * zsol * .5 * ysol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);	//ibrido tra il sopra e il di lato
+	if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
+	else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
+	* modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};
 // 	if(verboso) cout << modify_inloop->y << " " << modify_inloop->z << endl;
+	pot_vett_iniz->SetBinContent(yindex+2, zindex+2, theta); /////////////
+	if(verboso && modify_inloop->z > 10000 ) cout << modify_inloop->z << " at " << xindex << " " << yindex << " " << zindex << " ; " << rho << " " << theta << endl;
 	yindex++;
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug1++;
@@ -456,74 +466,75 @@ for(unsigned int i = 0; i < ninteractions; i++)
       {
 	if(xindex == x_border)                     
 	{
-	  beforex = potential[xindex+1][yindex][zindex].x;	//riflessione
 	  beforey = potential[xindex+1][yindex][zindex].y;	//riflessione
 	  beforez = potential[xindex+1][yindex][zindex].z;	//riflessione
 	} else
 	{
-	  beforex = potential[xindex-1][yindex][zindex].x;	//bulk
 	  beforey = potential[xindex-1][yindex][zindex].y;	//bulk
 	  beforez = potential[xindex-1][yindex][zindex].z;	//bulk
 	}
 	if(xindex == xsteps - 1)            
 	{
-	  beyondx = zero;					//nullo
 	  beyondy = zero;					//nullo
 	  beyondz = zero;					//nullo
 	} else 
 	{
-	  beyondx = potential[xindex+1][yindex][zindex].x;	//bulk
 	  beyondy = potential[xindex+1][yindex][zindex].y;	//bulk
 	  beyondz = potential[xindex+1][yindex][zindex].z;	//bulk
 	}
 	if(yindex == y_border)   
 	{
-	  leftx = potential[xindex][yindex+1][zindex].x;	//riflessione
 	  lefty = potential[xindex][yindex+1][zindex].y;	//riflessione
 	  leftz = potential[xindex][yindex+1][zindex].z;	//riflessione
 	} else
 	{
-	  leftx = potential[xindex][yindex-1][zindex].x;	//bulk
 	  lefty = potential[xindex][yindex-1][zindex].y;	//bulk
 	  leftz = potential[xindex][yindex-1][zindex].z;	//bulk
 	}
 	if(yindex == ysteps - 1)      
 	{
-	  rightx = zero;					//nullo
 	  righty = zero;					//nullo
 	  rightz = zero;					//nullo
 	} else 
 	{
-	  rightx = potential[xindex][yindex+1][zindex].x;	//bulk
 	  righty = potential[xindex][yindex+1][zindex].y;	//bulk
 	  rightz = potential[xindex][yindex+1][zindex].z;	//bulk
 	}
 	if(zindex == z_border)    
 	{
-	  belowx = potential[xindex][yindex][zindex+1].x;	//riflessione
 	  belowy = potential[xindex][yindex][zindex+1].y;	//riflessione
 	  belowz = potential[xindex][yindex][zindex+1].z;	//riflessione
 	} else 
 	{
-	  belowx = potential[xindex][yindex][zindex-1].x;	//bulk
 	  belowy = potential[xindex][yindex][zindex-1].y;	//bulk
 	  belowz = potential[xindex][yindex][zindex-1].z;	//bulk
 	}
 	if(zindex == zsteps - 1)      
 	{
-	  abovex = zero;					//nullo
 	  abovey = zero;					//nullo
 	  abovez = zero;					//nullo
 	} else      
 	{
-	  abovex = potential[xindex][yindex][zindex+1].x;	//bulk
 	  abovey = potential[xindex][yindex][zindex+1].y;	//bulk
 	  abovez = potential[xindex][yindex][zindex+1].z;	//bulk
 	}
-	//X potenziale vettore
-	currentj = currents[xindex][yindex][zindex].x;
-	analyzedpoint = (abovex + belowx + leftx + rightx + beyondx + beforex - (mu_0*currentj))/6.;
-	field[xindex][yindex][zindex].x = analyzedpoint;
+	if(co == false) {//X potenziale vettore
+	  if(xindex == x_border)    beforex = potential[xindex+1][yindex][zindex].x;	//riflessione
+	  else                      beforex = potential[xindex-1][yindex][zindex].x;	//bulk
+	  if(xindex == xsteps - 1)  beyondx = zero;					//nullo
+	  else                      beyondx = potential[xindex+1][yindex][zindex].x;	//bulk
+	  if(yindex == y_border)    leftx = potential[xindex][yindex+1][zindex].x;	//riflessione
+	  else                      leftx = potential[xindex][yindex-1][zindex].x;	//bulk
+	  if(yindex == ysteps - 1)  rightx = zero;					//nullo
+	  else                      rightx = potential[xindex][yindex+1][zindex].x;	//bulk
+	  if(zindex == z_border)    belowx = potential[xindex][yindex][zindex+1].x;	//riflessione
+	  else                      belowx = potential[xindex][yindex][zindex-1].x;	//bulk
+	  if(zindex == zsteps - 1)  abovex = zero;					//nullo
+	  else	                    abovex = potential[xindex][yindex][zindex+1].x;	//bulk
+	  currentj = currents[xindex][yindex][zindex].x;
+	  analyzedpoint = (abovex + belowx + leftx + rightx + beyondx + beforex - (mu_0*currentj))/6.;
+	  field[xindex][yindex][zindex].x = analyzedpoint;  
+	}
 	//Y potenziale vettore
 	currentj = currents[xindex][yindex][zindex].y;
 	analyzedpoint = (abovey + belowy + lefty + righty + beyondy + beforey - (mu_0*currentj))/6.;
@@ -554,74 +565,75 @@ for(unsigned int i = 0; i < ninteractions; i++)
       {
 	if(xindex == x_border)                     
 	{
-	  beforex = field[xindex+1][yindex][zindex].x;	//riflessione
 	  beforey = field[xindex+1][yindex][zindex].y;	//riflessione
 	  beforez = field[xindex+1][yindex][zindex].z;	//riflessione
 	} else
 	{
-	  beforex = field[xindex-1][yindex][zindex].x;	//bulk
 	  beforey = field[xindex-1][yindex][zindex].y;	//bulk
 	  beforez = field[xindex-1][yindex][zindex].z;	//bulk
 	}
 	if(xindex == xsteps - 1)            
 	{
-	  beyondx = zero;				//nullo
-	  beyondy = zero;				//nullo
-	  beyondz = zero;				//nullo
+	  beyondy = zero;					//nullo
+	  beyondz = zero;					//nullo
 	} else 
 	{
-	  beyondx = field[xindex+1][yindex][zindex].x;	//bulk
 	  beyondy = field[xindex+1][yindex][zindex].y;	//bulk
-	  beyondz = field[xindex+1][yindex][zindex].z;	//bulk
+	  beyondz = field[xindex+1][yindex][zindex].z;	//bulkfield
 	}
 	if(yindex == y_border)   
 	{
-	  leftx = field[xindex][yindex+1][zindex].x;	//riflessione
 	  lefty = field[xindex][yindex+1][zindex].y;	//riflessione
 	  leftz = field[xindex][yindex+1][zindex].z;	//riflessione
 	} else
 	{
-	  leftx = field[xindex][yindex-1][zindex].x;	//bulk
 	  lefty = field[xindex][yindex-1][zindex].y;	//bulk
 	  leftz = field[xindex][yindex-1][zindex].z;	//bulk
 	}
 	if(yindex == ysteps - 1)      
 	{
-	  rightx = zero;				//nullo
-	  righty = zero;				//nullo
-	  rightz = zero;				//nullo
+	  righty = zero;					//nullo
+	  rightz = zero;					//nullo
 	} else 
 	{
-	  rightx = field[xindex][yindex+1][zindex].x;	//bulk
 	  righty = field[xindex][yindex+1][zindex].y;	//bulk
 	  rightz = field[xindex][yindex+1][zindex].z;	//bulk
 	}
 	if(zindex == z_border)    
 	{
-	  belowx = field[xindex][yindex][zindex+1].x;	//riflessione
 	  belowy = field[xindex][yindex][zindex+1].y;	//riflessione
 	  belowz = field[xindex][yindex][zindex+1].z;	//riflessione
 	} else 
 	{
-	  belowx = field[xindex][yindex][zindex-1].x;	//bulk
 	  belowy = field[xindex][yindex][zindex-1].y;	//bulk
 	  belowz = field[xindex][yindex][zindex-1].z;	//bulk
 	}
 	if(zindex == zsteps - 1)      
 	{
-	  abovex = zero;				//nullo
-	  abovey = zero;				//nullo
-	  abovez = zero;				//nullo
+	  abovey = zero;					//nullo
+	  abovez = zero;					//nullo
 	} else      
 	{
-	  abovex = field[xindex][yindex][zindex+1].x;	//bulk
 	  abovey = field[xindex][yindex][zindex+1].y;	//bulk
 	  abovez = field[xindex][yindex][zindex+1].z;	//bulk
 	}
-	//X potenziale vettore
-	currentj = currents[xindex][yindex][zindex].x;
-	analyzedpoint = (abovex + belowx + leftx + rightx + beyondx + beforex - (mu_0*currentj))/6.;
-	potential[xindex][yindex][zindex].x = analyzedpoint;
+	if(co == false) {//X potenziale vettore
+	  if(xindex == x_border)    beforex = field[xindex+1][yindex][zindex].x;	//riflessione
+	  else                      beforex = field[xindex-1][yindex][zindex].x;	//bulk
+	  if(xindex == xsteps - 1)  beyondx = zero;					//nullo
+	  else                      beyondx = field[xindex+1][yindex][zindex].x;	//bulk
+	  if(yindex == y_border)    leftx = field[xindex][yindex+1][zindex].x;		//riflessione
+	  else                      leftx = field[xindex][yindex-1][zindex].x;		//bulk
+	  if(yindex == ysteps - 1)  rightx = zero;					//nullo
+	  else                      rightx = field[xindex][yindex+1][zindex].x;		//bulk
+	  if(zindex == z_border)    belowx = field[xindex][yindex][zindex+1].x;		//riflessione
+	  else                      belowx = field[xindex][yindex][zindex-1].x;		//bulk
+	  if(zindex == zsteps - 1)  abovex = zero;					//nullo
+	  else	                    abovex = field[xindex][yindex][zindex+1].x;		//bulk
+	  currentj = currents[xindex][yindex][zindex].x;
+	  analyzedpoint = (abovex + belowx + leftx + rightx + beyondx + beforex - (mu_0*currentj))/6.;
+	  potential[xindex][yindex][zindex].x = analyzedpoint;  
+	}
 	//Y potenziale vettore
 	currentj = currents[xindex][yindex][zindex].y;
 	analyzedpoint = (abovey + belowy + lefty + righty + beyondy + beforey - (mu_0*currentj))/6.;
@@ -771,13 +783,13 @@ while(xindex < xsteps)
       field[xindex][yindex][zindex].z = actualz;
       
       //check per il debug
-      if(xindex == 0 && zindex == 0 && yindex == 0){
-      cout << "Centro: " << actualx << " = " << dzy - dyz << endl;}
+//       if(xindex == 0 && zindex == 0 && yindex == 0){
+//       cout << "Centro: " << actualx << " = " << dzy - dyz << endl;}
+//       
+//       if(xindex == 1 && zindex == 0 && yindex == 0){
+//       cout << "Primo punto: " << actualx << " = " << dzy - dyz << endl;} 
       
-      if(xindex == 1 && zindex == 0 && yindex == 0){
-      cout << "Primo punto: " << actualx << " = " << dzy - dyz << endl;} 
-      
-      if(potential[xindex][yindex][zindex].x != 0) cout << "POTENZIALE LUNGO X!!" << endl;
+      if(verboso && potential[xindex][yindex][zindex].x != 0) cout << "POTENZIALE LUNGO X!!" << endl;
       if(verboso && xindex == 0)
       {
 // 	cout << actualx << " ";
@@ -800,6 +812,7 @@ while(xindex < xsteps)
   h1->Draw("colz");
 //   h2->Draw("colz");
 //   h3->Draw("colz");
+//   pot_vett_iniz->Draw("colz");
 
   return 0;
 //   return B{1,0,0};
@@ -823,3 +836,9 @@ void GridToPosition(Position3D * position, const int & xindex, const int & yinde
   position->z = zindex * delta + (0.5 * delta);
   return;
 }
+
+
+
+
+
+
