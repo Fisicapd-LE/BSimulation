@@ -78,10 +78,11 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
   
   void MagneticField::PotentialInitialization()
   {
+    //inizializzazione del potenziale vettore
     if (verboso) cout << "Inizio inizializzazione potenziale vettore..." << endl;
     starting_point  = {0.,0.,0.};		//inizia dal centro del sistema
     walking_point   = starting_point;
-    Vector3D * modify_inloop;			//variabile temporanea
+    Vector3D * modify_inloop;		//variabile temporaanea
     double rho = 0;
     double theta = 0;
     
@@ -89,7 +90,10 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     debug2 = 0;
     debug3 = 0;
     
+    //   PositionToGrid(& walking_point, x_border, y_border, z_border);
+    
     //set del potenziale vettore all'interno del solenoide
+    double mu_0 = 1.;
     while(walking_point.x < xsol*.5)		//ciclo sulla lunghezza del solenoide
     {
       walking_point.z = starting_point.z;
@@ -100,14 +104,14 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	{
 	  PositionToGrid(& walking_point, xindex, yindex, zindex);
 	  modify_inloop = & potential[xindex][yindex][zindex];
-	  rho = mu_0 * .5 * sqrt(walking_point.x * walking_point.x + walking_point.y * walking_point.y);
-	  if(walking_point.z == 0) theta = 0;				//serve a evitare infiniti
-	  else theta = atan(walking_point.y/walking_point.z);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
-	  * modify_inloop = {0., rho * sin(theta), rho * cos(theta)};
+	  rho = mu_0 * current * .5 * sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);
+	  if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
+	  else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
+	  * modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};
 	  yindex++;
 	  GridToPosition(& walking_point, xindex, yindex, zindex);
 	  debug1++;
-	  if( debug1 > xsteps * ysteps * zsteps && verboso)
+	  if( debug1 > 100000 && verboso)
 	  {
 	    cout << "ERROR IN CYCLE4" << endl;
 	    return;
@@ -116,7 +120,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex++;					//avanza lungo l'altezza
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug2++;
-	if( debug2 > xsteps * ysteps * zsteps && verboso)
+	if( debug2 > 100000 && verboso)
 	{
 	  cout << "ERROR IN CYCLE5" << endl;
 	  return;
@@ -125,7 +129,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;					//avanza lungo l'asse
       GridToPosition(& walking_point, xindex, yindex, zindex);
       debug1++;
-      if( debug3 > xsteps * ysteps * zsteps && verboso)
+      if( debug3 > 100000 && verboso)
       {
 	cout << "ERROR IN CYCLE6" << endl;
 	return;
@@ -142,6 +146,8 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     starting_point = {0., 0., zsol * .5};		//inizia da sopra il solenoide
     walking_point  = starting_point;
     
+    //   PositionToGrid(& walking_point, x_border, y_border, z_border);
+    
     
     while(walking_point.x < xsol*.5)		//ciclo sulla lunghezza del solenoide
     {
@@ -153,14 +159,14 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	{
 	  PositionToGrid(& walking_point, xindex, yindex, zindex);
 	  modify_inloop = & potential[xindex][yindex][zindex];
-	  rho = mu_0 * .5 * zsol * .5 * zsol * .5 / (sqrt(walking_point.x * walking_point.x + walking_point.y * walking_point.y)+0.0001);
-	  if(walking_point.z == 0) theta = 0;				//serve a evitare infiniti
-	  else theta = atan(walking_point.y/walking_point.z);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
-	  * modify_inloop = {0., rho * sin(theta), rho * cos(theta)};
+	  rho = mu_0 * current * .5 * zsol * .5 * zsol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);
+	  if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
+	  else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
+	  * modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};	  
 	  yindex++;
 	  GridToPosition(& walking_point, xindex, yindex, zindex);
 	  debug1++;
-	  if( debug1 > xsteps * ysteps * zsteps && verboso)
+	  if( debug1 > 100000 && verboso)
 	  {
 	    cout << "ERROR IN CYCLE7" << endl;
 	    return;
@@ -169,7 +175,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex++;					//avanza lungo l'altezza
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug2++;
-	if( debug2 > xsteps * ysteps * zsteps && verboso)
+	if( debug2 > 100000 && verboso)
 	{
 	  cout << "ERROR IN CYCLE8" << endl;
 	  return;
@@ -178,7 +184,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;					//avanza lungo l'asse
       GridToPosition(& walking_point, xindex, yindex, zindex);
       debug3++;
-      if( debug3 > xsteps * ysteps * zsteps && verboso)
+      if( debug3 > 100000 && verboso)
       {
 	cout << "ERROR IN CYCLE9" << endl;
 	return;
@@ -194,6 +200,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     
     starting_point = {0., ysol * .5, 0};		//inizia da di lato al solenoide
     walking_point = starting_point;
+    //   PositionToGrid(& walking_point, x_border, y_border, z_border);
     
     
     while(walking_point.x < xsol*.5)		//ciclo sulla lunghezza del solenoide
@@ -206,14 +213,15 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	{
 	  PositionToGrid(& walking_point, xindex, yindex, zindex);
 	  modify_inloop = & potential[xindex][yindex][zindex];
-	  rho = mu_0 * .5 * ysol * .5 * ysol * .5 / (sqrt(walking_point.x * walking_point.x + walking_point.y * walking_point.y) + 0.0001);
-	  if(walking_point.z == 0) theta = 0;				//serve a evitare infiniti
-	  theta = atan(walking_point.y/walking_point.z);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
-	  * modify_inloop = {0., rho * sin(theta), rho * cos(theta)};
+	  rho = mu_0 * current * .5 * ysol * .5 * ysol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);
+	  if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
+	  else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
+	  * modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};
+	  if(verboso && modify_inloop->z > 10000 ) cout << modify_inloop->z << " at " << xindex << " " << yindex << " " << zindex << " ; " << rho << " " << theta << endl;
 	  yindex++;
 	  GridToPosition(& walking_point, xindex, yindex, zindex);
 	  debug1++;
-	  if( debug1 > xsteps * ysteps * zsteps && verboso)
+	  if( debug1 > 100000 && verboso)
 	  {
 	    cout << "ERROR IN CYCLE10"  << endl;
 	    cout << "yindex = " << yindex << " ysol*.5 = " << ysol *.5 << " ysyst = " << ysyst << endl;
@@ -223,7 +231,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex++;					//avanza lungo l'altezza
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug2++;
-	if( debug2 > xsteps * ysteps * zsteps && verboso)
+	if( debug2 > 100000 && verboso)
 	{
 	  cout << "ERROR IN CYCLE11" << endl;
 	  return;
@@ -232,7 +240,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;					//avanza lungo l'asse
       GridToPosition(& walking_point, xindex, yindex, zindex);
       debug3++;
-      if( debug3 > xsteps * ysteps * zsteps && verboso)
+      if( debug3 > 100000 && verboso)
       {
 	cout << "ERROR IN CYCLE12" << endl;
 	return;
@@ -243,11 +251,12 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     debug2 = 0;
     debug3 = 0;
     
-    //set del potenziale vettore all'esterno del solenoide !!ACCANTO!!
+    //set del potenziale vettore all'esterno del solenoide !!TRA ALTO E DI LATO, IL QUADRATONE!!
     
     
     starting_point = {0., ysol * .5, zsol * .5};	//inizia dal'angolino del solenoide
     walking_point = starting_point;
+    //   PositionToGrid(& walking_point, x_border, y_border, z_border);
     
     while(walking_point.x < xsol*.5)		//ciclo sulla lunghezza del solenoide
     {
@@ -259,14 +268,15 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	{
 	  PositionToGrid(& walking_point, xindex, yindex, zindex);
 	  modify_inloop = & potential[xindex][yindex][zindex];
-	  rho = mu_0 * .5 * zsol * .5 * ysol * .5 / (sqrt(walking_point.x * walking_point.x + walking_point.y * walking_point.y) + 0.0001);	//ibrido tra il sopra e il di lato
-	  if(walking_point.z == 0) theta = 0;				//serve a evitare infiniti
-	  else theta = atan(walking_point.y/walking_point.z);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
-	  * modify_inloop = {0., rho * sin(theta), rho * cos(theta)};
+	  rho = mu_0 * current * .5 * zsol * .5 * ysol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);	//ibrido tra il sopra e il di lato
+	  if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
+	  else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
+	  * modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};
+	  if(verboso && modify_inloop->z > 10000 ) cout << modify_inloop->z << " at " << xindex << " " << yindex << " " << zindex << " ; " << rho << " " << theta << endl;
 	  yindex++;
 	  GridToPosition(& walking_point, xindex, yindex, zindex);
 	  debug1++;
-	  if( debug1 > xsteps * ysteps * zsteps && verboso)
+	  if( debug1 > 100000 && verboso)
 	  {
 	    cout << "ERROR IN CYCLE13" << endl;
 	    return;
@@ -275,7 +285,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex++;					//avanza lungo l'altezza
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug2++;
-	if( debug2 > xsteps * ysteps * zsteps && verboso)
+	if( debug2 > 100000 && verboso)
 	{
 	  cout << "ERROR IN CYCLE14" << endl;
 	  return;
@@ -284,13 +294,13 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;					//avanza lungo l'asse
       GridToPosition(& walking_point, xindex, yindex, zindex);
       debug3++;
-      if( debug3 > xsteps * ysteps * zsteps && verboso)
+      if( debug3 > 100000 && verboso)
       {
 	cout << "ERROR IN CYCLE15" << endl;
 	return;
       }
     } 
-    //il resto del potenziale vettore è lasciato a zero, verrà poi modificato dall'algoritmo numerico.
+    //il resto del potenziale vettore è alsciato a zero, verrà poi modificato dall'algoritmo numerico.
   }
   
   
@@ -742,17 +752,17 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex = zborder;
 	while(zindex < zsteps)
 	{
-	  if(xindex == 0)  hxx->SetBinContent(yindex+1, zindex+1, potential[xindex][yindex][zindex].x);
-	  if(xindex == 0)  hyx->SetBinContent(yindex+1, zindex+1, potential[xindex][yindex][zindex].y);
-	  if(xindex == 0)  hzx->SetBinContent(yindex+1, zindex+1, potential[xindex][yindex][zindex].z);
+	  if(xindex == 0)  hxx->SetBinContent(yindex+1, zindex+1, field[xindex][yindex][zindex].x);
+	  if(xindex == 0)  hyx->SetBinContent(yindex+1, zindex+1, field[xindex][yindex][zindex].y);
+	  if(xindex == 0)  hzx->SetBinContent(yindex+1, zindex+1, field[xindex][yindex][zindex].z);
 	  
-	  if(yindex == 0)  hxy->SetBinContent(xindex+1, zindex+1, potential[xindex][yindex][zindex].x);
-	  if(yindex == 0)  hyy->SetBinContent(xindex+1, zindex+1, potential[xindex][yindex][zindex].y);
-	  if(yindex == 0)  hzy->SetBinContent(xindex+1, zindex+1, potential[xindex][yindex][zindex].z);
+	  if(yindex == 0)  hxy->SetBinContent(xindex+1, zindex+1, field[xindex][yindex][zindex].x);
+	  if(yindex == 0)  hyy->SetBinContent(xindex+1, zindex+1, field[xindex][yindex][zindex].y);
+	  if(yindex == 0)  hzy->SetBinContent(xindex+1, zindex+1, field[xindex][yindex][zindex].z);
 	  
-	  if(zindex == 0)  hxz->SetBinContent(xindex+1, yindex+1, potential[xindex][yindex][zindex].x);
-	  if(zindex == 0)  hyz->SetBinContent(xindex+1, yindex+1, potential[xindex][yindex][zindex].y);
-	  if(zindex == 0)  hzz->SetBinContent(xindex+1, yindex+1, potential[xindex][yindex][zindex].z);
+	  if(zindex == 0)  hxz->SetBinContent(xindex+1, yindex+1, field[xindex][yindex][zindex].x);
+	  if(zindex == 0)  hyz->SetBinContent(xindex+1, yindex+1, field[xindex][yindex][zindex].y);
+	  if(zindex == 0)  hzz->SetBinContent(xindex+1, yindex+1, field[xindex][yindex][zindex].z);
 	  
 	  zindex++;
 	}
@@ -762,7 +772,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     }
     
     hxx->Write();
-    hyz->Write();
+    hyx->Write();
     hzx->Write();
     
     hxy->Write();
