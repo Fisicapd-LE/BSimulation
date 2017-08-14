@@ -9,10 +9,13 @@ class MagneticField
 public:
   
   MagneticField(double xsyst, double ysyst, double zsyst, double xsol, double ysol, double zsol, double delta, double current, long ninteractions);
+  MagneticField(std::string in_name);
   virtual ~MagneticField();
   
   void CreateRootOutput(std::string out_name);
   void CreateTextOutput(std::string out_name);
+  
+  Vector3D GetB(Position3D pos);	//la funzione per cui tutto il programma è stato scritto
   
 private: 
   

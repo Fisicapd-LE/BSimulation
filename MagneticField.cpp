@@ -73,6 +73,66 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     PotentialInitialization();
   }
   
+  MagneticField::MagneticField(string in_name):
+  field_computed(true)
+  {
+    stringstream sstr; 
+    sstr << in_name << ".dat";
+    string str = sstr.str();
+    fstream fs;
+    fs.open(str.c_str(), fstream::in);
+    
+    if ( fs.is_open() ) cout << "DAT File opened successfully" << endl;
+    
+    fs >> xsteps;
+    fs >> ysteps;
+    fs >> zsteps;
+    
+    
+    cout << "Inizio creazione griglie..." << endl;
+    fieldLayer2.resize(xsteps * ysteps * zsteps, {0.,0.,0.});		//contiene tutto il campo
+    fieldLayer1.resize(xsteps * ysteps);				//contiene puntatori a un piano orizzontale
+    field.resize(xsteps);						//contiene puntatori alla posizione lungo l'asse del solenoide
+    
+    for(unsigned int i = 0; i < fieldLayer1.size(); i++)		//sistema i puntatori in modo che puntino al posto giusto
+    {
+      fieldLayer1.at(i) = & fieldLayer2.at(i * ysteps);
+    }
+    for(unsigned int i = 0; i < field.size(); i++)
+    {
+      field.at(i) = & fieldLayer1.at(i * xsteps);
+    }
+    
+    xborder = 0;
+    yborder = 0;
+    zborder = 0;
+    
+    xindex = xborder;
+    yindex = yborder;
+    zindex = zborder;
+    
+    while(xindex < xsteps)
+    {
+      yindex = yborder;
+      while(yindex < ysteps)
+      {
+	zindex = zborder;
+	while(zindex < zsteps)
+	{
+	  fs >> field[xindex][yindex][zindex].x;
+	  fs >> field[xindex][yindex][zindex].y;
+	  fs >> field[xindex][yindex][zindex].z;
+	  zindex++;
+	}
+	yindex++;
+      }
+      xindex++;
+    }
+    fs.close();
+    
+    
+  }
+  
   MagneticField::~MagneticField()
   { }
   
@@ -83,7 +143,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     if (verboso) cout << "Inizio inizializzazione potenziale vettore..." << endl;
     starting_point  = {0.,0.,0.};		//inizia dal centro del sistema
     walking_point   = starting_point;
-    Vector3D * modify_inloop;		//variabile temporaanea
+    Vector3D * modify_inloop;		//variabile temporanea
     double rho = 0;
     double theta = 0;
     
@@ -716,6 +776,14 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     position->z = zindex * delta + (0.5 * delta);
     return;
   }
+  
+  Vector3D MagneticField::GetB(Position3D pos)
+  {
+    if (field_computed == false) ComputeField();
+    unsigned int xtemp, ytemp, ztemp;
+    PositionToGrid(& pos, xtemp, ytemp, ztemp);
+    return field[xtemp][ytemp][ztemp];
+  }
 
   
   
@@ -807,9 +875,22 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     stringstream sstr; 
     sstr << outname << ".dat";
     string str = sstr.str();
-    
     fstream fs;
-    fs.open(str.c_str(), fstream::in);
+    fs.open(str.c_str(), fstream::out);
+    
+    if ( fs.is_open() ) cout << "DAT File opened successfully" << endl;
+    
+    xborder = 0;
+    yborder = 0;
+    zborder = 0;
+    
+    xindex = xborder;
+    yindex = yborder;
+    zindex = zborder;
+    
+    fs << xsteps << endl;
+    fs << ysteps << endl;
+    fs << zsteps << endl;
     
     while(xindex < xsteps)
     {
@@ -819,13 +900,12 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex = zborder;
 	while(zindex < zsteps)
 	{
-	  fs << field[xindex][yindex][zindex].x << " " << field[xindex][yindex][zindex].y << " " << field[xindex][yindex][zindex].z << endl;
+	  fs << field[xindex][yindex][zindex].x << " " << field[xindex][yindex][zindex].y << " " << field[xindex][yindex][zindex].z << " ";
 	  zindex++;
 	}
-	fs << "#" << endl;
 	yindex++;
       }
-      fs << "@" << endl;
+      fs << endl;
       xindex++;
     }
     fs.close();
