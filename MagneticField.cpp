@@ -50,17 +50,20 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     currentsLayer1.resize(xsteps * ysteps);				//contiene puntatori a un piano orizzontale
     currents.resize(xsteps);						//contiene puntatori alla posizione lungo l'asse del solenoide */
     
-    for(unsigned int i = 0; i < fieldLayer1.size(); i++)		//sistema i puntatori in modo che puntino al posto giusto
-    {
-      fieldLayer1.at(i) = & fieldLayer2.at(i * ysteps);
-      potentialLayer1.at(i) = & potentialLayer2.at(i * ysteps);
-      //currentsLayer1.at(i) = & currentsLayer2.at(i * ysteps);
-    }
     for(unsigned int i = 0; i < field.size(); i++)
     {
-      field.at(i) = & fieldLayer1.at(i * xsteps);
-      potential.at(i) = & potentialLayer1.at(i * xsteps);
+      field[i] = & fieldLayer1[i * ysteps];
+      potential[i] = & potentialLayer1[i * ysteps];
       //currents.at(i) = & currentsLayer1.at(i * xsteps);
+    }
+    for(unsigned int i = 0; i < field.size(); i++)		//sistema i puntatori in modo che puntino al posto giusto
+    {
+      for(unsigned int j = 0; j < ysteps; j++)
+      {
+        field[i][j] = & fieldLayer2[(i * ysteps + j) * zsteps];
+	potential[i][j] = & potentialLayer2[(i * ysteps + j) * zsteps];
+        //currentsLayer1.at(i) = & currentsLayer2.at(i * ysteps);
+      }
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
@@ -94,13 +97,16 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     fieldLayer1.resize(xsteps * ysteps);				//contiene puntatori a un piano orizzontale
     field.resize(xsteps);						//contiene puntatori alla posizione lungo l'asse del solenoide
     
-    for(unsigned int i = 0; i < fieldLayer1.size(); i++)		//sistema i puntatori in modo che puntino al posto giusto
-    {
-      fieldLayer1.at(i) = & fieldLayer2.at(i * ysteps);
-    }
     for(unsigned int i = 0; i < field.size(); i++)
     {
-      field.at(i) = & fieldLayer1.at(i * xsteps);
+      field[i] = & fieldLayer1[i * ysteps];
+    }
+    for(unsigned int i = 0; i < field.size(); i++)		//sistema i puntatori in modo che puntino al posto giusto
+    {
+      for(unsigned int j = 0; j < ysteps; j++)
+      {
+	field[i][j] = & fieldLayer2[(i * ysteps + j) * zsteps];
+      }
     }
     
     xborder = 0;
@@ -172,7 +178,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	  yindex++;
 	  GridToPosition(& walking_point, xindex, yindex, zindex);
 	  debug1++;
-	  if( debug1 > 100000 && verboso)
+	  if( debug1 > xsteps * ysteps * zsteps && verboso)
 	  {
 	    cout << "ERROR IN CYCLE4" << endl;
 	    return;
@@ -181,7 +187,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex++;					//avanza lungo l'altezza
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug2++;
-	if( debug2 > 100000 && verboso)
+	if( debug2 > xsteps * ysteps * zsteps && verboso)
 	{
 	  cout << "ERROR IN CYCLE5" << endl;
 	  return;
@@ -190,7 +196,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;					//avanza lungo l'asse
       GridToPosition(& walking_point, xindex, yindex, zindex);
       debug1++;
-      if( debug3 > 100000 && verboso)
+      if( debug3 > xsteps * ysteps * zsteps && verboso)
       {
 	cout << "ERROR IN CYCLE6" << endl;
 	return;
@@ -220,14 +226,14 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	{
 	  PositionToGrid(& walking_point, xindex, yindex, zindex);
 	  modify_inloop = & potential[xindex][yindex][zindex];
-	  rho = mu_0 * current * .5 * zsol * .5 * zsol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);
+	  rho = mu_0 * current * .5 * zsol * .5 * zsol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);	//prima era zsol
 	  if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
 	  else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
 	  * modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};	  
 	  yindex++;
 	  GridToPosition(& walking_point, xindex, yindex, zindex);
 	  debug1++;
-	  if( debug1 > 100000 && verboso)
+	  if( debug1 > xsteps * ysteps * zsteps && verboso)
 	  {
 	    cout << "ERROR IN CYCLE7" << endl;
 	    return;
@@ -236,7 +242,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex++;					//avanza lungo l'altezza
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug2++;
-	if( debug2 > 100000 && verboso)
+	if( debug2 > xsteps * ysteps * zsteps && verboso)
 	{
 	  cout << "ERROR IN CYCLE8" << endl;
 	  return;
@@ -245,7 +251,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;					//avanza lungo l'asse
       GridToPosition(& walking_point, xindex, yindex, zindex);
       debug3++;
-      if( debug3 > 100000 && verboso)
+      if( debug3 > xsteps * ysteps * zsteps && verboso)
       {
 	cout << "ERROR IN CYCLE9" << endl;
 	return;
@@ -274,7 +280,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	{
 	  PositionToGrid(& walking_point, xindex, yindex, zindex);
 	  modify_inloop = & potential[xindex][yindex][zindex];
-	  rho = mu_0 * current * .5 * ysol * .5 * ysol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);
+	  rho = mu_0 * current * .5 * ysol * .5 * ysol * .5 / sqrt(walking_point.y * walking_point.y + walking_point.z * walking_point.z);	//prima era ysol
 	  if(walking_point.y == 0) theta = M_PI/2;				//serve a evitare infiniti
 	  else theta = atan(walking_point.z/walking_point.y);		//ordine giusto? credo di sì, basta mantenere quello sopra qua come quello con seno quando riempio
 	  * modify_inloop = {0., -rho * sin(theta), rho * cos(theta)};
@@ -282,7 +288,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	  yindex++;
 	  GridToPosition(& walking_point, xindex, yindex, zindex);
 	  debug1++;
-	  if( debug1 > 100000 && verboso)
+	  if( debug1 > xsteps * ysteps * zsteps && verboso)
 	  {
 	    cout << "ERROR IN CYCLE10"  << endl;
 	    cout << "yindex = " << yindex << " ysol*.5 = " << ysol *.5 << " ysyst = " << ysyst << endl;
@@ -292,7 +298,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex++;					//avanza lungo l'altezza
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug2++;
-	if( debug2 > 100000 && verboso)
+	if( debug2 > xsteps * ysteps * zsteps && verboso)
 	{
 	  cout << "ERROR IN CYCLE11" << endl;
 	  return;
@@ -301,7 +307,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;					//avanza lungo l'asse
       GridToPosition(& walking_point, xindex, yindex, zindex);
       debug3++;
-      if( debug3 > 100000 && verboso)
+      if( debug3 > xsteps * ysteps * zsteps && verboso)
       {
 	cout << "ERROR IN CYCLE12" << endl;
 	return;
@@ -337,7 +343,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	  yindex++;
 	  GridToPosition(& walking_point, xindex, yindex, zindex);
 	  debug1++;
-	  if( debug1 > 100000 && verboso)
+	  if( debug1 > xsteps * ysteps * zsteps && verboso)
 	  {
 	    cout << "ERROR IN CYCLE13" << endl;
 	    return;
@@ -346,7 +352,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	zindex++;					//avanza lungo l'altezza
 	GridToPosition(& walking_point, xindex, yindex, zindex);
 	debug2++;
-	if( debug2 > 100000 && verboso)
+	if( debug2 > xsteps * ysteps * zsteps && verboso)
 	{
 	  cout << "ERROR IN CYCLE14" << endl;
 	  return;
@@ -355,7 +361,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;					//avanza lungo l'asse
       GridToPosition(& walking_point, xindex, yindex, zindex);
       debug3++;
-      if( debug3 > 100000 && verboso)
+      if( debug3 > xsteps * ysteps * zsteps && verboso)
       {
 	cout << "ERROR IN CYCLE15" << endl;
 	return;
@@ -761,7 +767,6 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
   
   void MagneticField::PositionToGrid(const Position3D * position, unsigned int & xindex, unsigned int & yindex, unsigned int & zindex)
   {
-    double delta = 0.1;		//dovrebbe vederla dal programma andrà implementato nella classe
     xindex = int(position->x/delta);
     yindex = int(position->y/delta);
     zindex = int(position->z/delta);
@@ -770,7 +775,6 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
   
   void MagneticField::GridToPosition(Position3D * position, const unsigned int & xindex, const unsigned int & yindex, const unsigned int & zindex)
   {
-    double delta = 0.1;
     position->x = xindex * delta + (0.5 * delta);
     position->y = yindex * delta + (0.5 * delta);
     position->z = zindex * delta + (0.5 * delta);
@@ -790,7 +794,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
   void MagneticField::CreateRootOutput(string outname)
   {
     
-    if (field_computed == false) ComputeField();
+    if (field_computed == false) ComputeField(); //TODO rimettere
     
     
     xborder = 0;
@@ -847,6 +851,74 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       }
       xindex++;
     }
+    
+    xindex = xborder;
+    yindex = yborder;
+    zindex = zborder;
+    
+    while(xindex < xsteps)		//per settare i confini del solenoide
+    {
+      yindex = yborder;
+      while(yindex < ysteps)
+      {
+	zindex = zborder;
+	while(zindex < zsteps)
+	{
+	  Vector3D current = CurrentAt(xindex, yindex, zindex);
+	  if(current.y != 0 || current.z != 0 || current.x != 0)
+	  {
+	    if(xindex == 0)  hxx->SetBinContent(yindex+1, zindex+1, 0);
+	    if(xindex == 0)  hyx->SetBinContent(yindex+1, zindex+1, 0);
+	    if(xindex == 0)  hzx->SetBinContent(yindex+1, zindex+1, 0);
+	    
+	    if(yindex == 0)  hxy->SetBinContent(xindex+1, zindex+1, 0);
+	    if(yindex == 0)  hyy->SetBinContent(xindex+1, zindex+1, 0);
+	    if(yindex == 0)  hzy->SetBinContent(xindex+1, zindex+1, 0);
+	    
+	    if(zindex == 0)  hxz->SetBinContent(xindex+1, yindex+1, 0);
+	    if(zindex == 0)  hyz->SetBinContent(xindex+1, yindex+1, 0);
+	    if(zindex == 0)  hzz->SetBinContent(xindex+1, yindex+1, 0);
+	  }
+	  zindex++;
+	}
+	yindex++;
+      }
+      xindex++;
+    }
+    
+    
+    xindex = xborder;		//debugging per vedere il potenziale
+    yindex = yborder;
+    zindex = zborder;
+    
+    while(xindex < xsteps)
+    {
+      yindex = yborder;
+      while(yindex < ysteps)
+      {
+	zindex = zborder;
+	while(zindex < zsteps)
+	{
+	  if(xindex == 0)  hxx->SetBinContent(yindex+1, zindex+1, potential[xindex][yindex][zindex].x);
+	  if(xindex == 0)  hyx->SetBinContent(yindex+1, zindex+1, potential[xindex][yindex][zindex].y);
+	  if(xindex == 0)  hzx->SetBinContent(yindex+1, zindex+1, potential[xindex][yindex][zindex].z);
+	  
+	  if(yindex == 0)  hxy->SetBinContent(xindex+1, zindex+1, potential[xindex][yindex][zindex].x);
+	  if(yindex == 0)  hyy->SetBinContent(xindex+1, zindex+1, potential[xindex][yindex][zindex].y);
+	  if(yindex == 0)  hzy->SetBinContent(xindex+1, zindex+1, potential[xindex][yindex][zindex].z);
+	  
+	  if(zindex == 0)  hxz->SetBinContent(xindex+1, yindex+1, potential[xindex][yindex][zindex].x);
+	  if(zindex == 0)  hyz->SetBinContent(xindex+1, yindex+1, potential[xindex][yindex][zindex].y);
+	  if(zindex == 0)  hzz->SetBinContent(xindex+1, yindex+1, potential[xindex][yindex][zindex].z);
+	  
+	  zindex++;
+	}
+	yindex++;
+      }
+      xindex++;
+    }
+    
+    
     
     hxx->Write();
     hyx->Write();

@@ -1,2 +1,2 @@
-g++ -std=c++11 `root-config --cflags` -o test Class.cpp MagneticField.cpp `root-config --libs`
+g++ -std=c++11 `root-config --cflags` -O3 -o test Class.cpp MagneticField.cpp `root-config --libs`
  
