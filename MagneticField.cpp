@@ -2,6 +2,7 @@
 #include <cmath>
 #include <sstream>
 #include <time.h>
+#include <fstream>
 
 #include "MagneticField.h"
 
@@ -519,7 +520,15 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	}
 	xindex++;
       }
-      
+      if(i == ninteractions * 0.1) cout << "10% of the process" << endl;
+      if(i == ninteractions * 0.2) cout << "20% of the process" << endl;
+      if(i == ninteractions * 0.3) cout << "30% of the process" << endl;
+      if(i == ninteractions * 0.4) cout << "40% of the process" << endl;
+      if(i == ninteractions * 0.5) cout << "50% of the process" << endl;
+      if(i == ninteractions * 0.6) cout << "60% of the process" << endl;
+      if(i == ninteractions * 0.7) cout << "70% of the process" << endl;
+      if(i == ninteractions * 0.8) cout << "80% of the process" << endl;
+      if(i == ninteractions * 0.9) cout << "90% of the process" << endl;
     }
     
     time_t end = time(NULL);
@@ -786,6 +795,40 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     outfile->Close();
     delete outfile;
     currentDir->cd();
+    
+    return;
+  }
+  
+  void MagneticField::CreateTextOutput(string outname)
+  {
+    
+    if (field_computed == false) ComputeField();
+    
+    stringstream sstr; 
+    sstr << outname << ".dat";
+    string str = sstr.str();
+    
+    fstream fs;
+    fs.open(str.c_str(), fstream::in);
+    
+    while(xindex < xsteps)
+    {
+      yindex = yborder;
+      while(yindex < ysteps)
+      {
+	zindex = zborder;
+	while(zindex < zsteps)
+	{
+	  fs << field[xindex][yindex][zindex].x << " " << field[xindex][yindex][zindex].y << " " << field[xindex][yindex][zindex].z << endl;
+	  zindex++;
+	}
+	fs << "#" << endl;
+	yindex++;
+      }
+      fs << "@" << endl;
+      xindex++;
+    }
+    fs.close();
     
     return;
   }

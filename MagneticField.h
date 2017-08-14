@@ -12,6 +12,7 @@ public:
   virtual ~MagneticField();
   
   void CreateRootOutput(std::string out_name);
+  void CreateTextOutput(std::string out_name);
   
 private: 
   
