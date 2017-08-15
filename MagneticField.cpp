@@ -886,7 +886,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;
     }
     
-    
+    /*
     xindex = xborder;		//debugging per vedere il potenziale
     yindex = yborder;
     zindex = zborder;
@@ -918,7 +918,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       xindex++;
     }
     
-    
+    */
     
     hxx->Write();
     hyx->Write();

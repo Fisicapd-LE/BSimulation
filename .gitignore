@@ -2,3 +2,4 @@
 *.dat
 .directory 
 test
+output/*
