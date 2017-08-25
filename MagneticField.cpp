@@ -422,7 +422,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	    if(yindex == yborder)   
 	    {
 	      lefty = potential[xindex][yindex+1][zindex].y;	//riflessione
-	      leftz = potential[xindex][yindex+1][zindex].z;	//riflessione
+	      leftz = -potential[xindex][yindex+1][zindex].z;	//antiriflessione	CAMBIATO
 	    } else
 	    {
 	      lefty = potential[xindex][yindex-1][zindex].y;	//bulk
@@ -439,7 +439,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	    }
 	    if(zindex == zborder)    
 	    {
-	      belowy = potential[xindex][yindex][zindex+1].y;	//riflessione
+	      belowy = -potential[xindex][yindex][zindex+1].y;	//antiriflessione	CAMBIATO
 	      belowz = potential[xindex][yindex][zindex+1].z;	//riflessione
 	    } else 
 	    {
@@ -469,16 +469,16 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	      if(zindex == zsteps - 1)  abovex = zero;						//nullo
 	      else	                    abovex = potential[xindex][yindex][zindex+1].x;	//bulk
 	      currentj = CurrentAt(xindex, yindex, zindex);
-	      analyzedpoint = (abovex + belowx + leftx + rightx + beyondx + beforex - (mu_0*currentj.x))/6.;
+	      analyzedpoint = (abovex + belowx + leftx + rightx + beyondx + beforex + (mu_0*currentj.x))/6.;
 	      field[xindex][yindex][zindex].x = analyzedpoint;  
 	    }
 	    //Y potenziale vettore
 	    currentj = CurrentAt(xindex, yindex, zindex);
-	    analyzedpoint = (abovey + belowy + lefty + righty + beyondy + beforey - (mu_0*currentj.y))/6.;
+	    analyzedpoint = (abovey + belowy + lefty + righty + beyondy + beforey + (mu_0*currentj.y))/6.;
 	    field[xindex][yindex][zindex].y = analyzedpoint;
 	    //Z potenziale vettore
-	    //currentj = currents[xindex][yindex][zindex].z;
-	    analyzedpoint = (abovez + belowz + leftz + rightz + beyondz + beforez - (mu_0*currentj.z))/6.;
+	    //currentj = currents[xindex][yindex][zindex];
+	    analyzedpoint = (abovez + belowz + leftz + rightz + beyondz + beforez + (mu_0*currentj.z))/6.;
 	    field[xindex][yindex][zindex].z = analyzedpoint;
 	    
 	    zindex++;
@@ -521,7 +521,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	    if(yindex == yborder)   
 	    {
 	      lefty = field[xindex][yindex+1][zindex].y;	//riflessione
-	      leftz = field[xindex][yindex+1][zindex].z;	//riflessione
+	      leftz = -field[xindex][yindex+1][zindex].z;	//riflessione
 	    } else
 	    {
 	      lefty = field[xindex][yindex-1][zindex].y;	//bulk
@@ -538,7 +538,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	    }
 	    if(zindex == zborder)    
 	    {
-	      belowy = field[xindex][yindex][zindex+1].y;	//riflessione
+	      belowy = -field[xindex][yindex][zindex+1].y;	//riflessione
 	      belowz = field[xindex][yindex][zindex+1].z;	//riflessione
 	    } else 
 	    {
@@ -568,16 +568,31 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	      if(zindex == zsteps - 1)  abovex = zero;					//nullo
 	      else	                    abovex = field[xindex][yindex][zindex+1].x;	//bulk
 	      currentj = CurrentAt(xindex, yindex, zindex);
-	      analyzedpoint = (abovex + belowx + leftx + rightx + beyondx + beforex - (mu_0*currentj.x))/6.;
+	      analyzedpoint = (abovex + belowx + leftx + rightx + beyondx + beforex + (mu_0*currentj.x))/6.;	//prova con +
 	      potential[xindex][yindex][zindex].x = analyzedpoint;  
 	    }
 	    //Y potenziale vettore
 	    currentj = CurrentAt(xindex, yindex, zindex);
-	    analyzedpoint = (abovey + belowy + lefty + righty + beyondy + beforey - (mu_0*currentj.y))/6.;
+	    analyzedpoint = (abovey + belowy + lefty + righty + beyondy + beforey + (mu_0*currentj.y))/6.;
 	    potential[xindex][yindex][zindex].y = analyzedpoint;
 	    //Z potenziale vettore
 	    //currentj = CurrentAt(xindex, yindex, zindex);
-	    analyzedpoint = (abovez + belowz + leftz + rightz + beyondz + beforez - (mu_0*currentj.z))/6.;
+	    analyzedpoint = (abovez + belowz + leftz + rightz + beyondz + beforez + (mu_0*currentj.z))/6.;
+	    //debug
+	    if(verboso && analyzedpoint < 0)
+	    {
+	      cout << "AnalyzedPoint negative!!" << endl
+	           << "Value: " << analyzedpoint << endl
+	           << "Position: " << xindex << " " << yindex << " " << zindex << endl
+	           << "abovez: " << abovez << endl
+	           << "belowz: " << belowz << endl
+	           << "leftz: " << leftz << endl
+	           << "rightz: " << rightz << endl
+	           << "beyondz: " << beyondz << endl
+	           << "beforez: " << beforez << endl
+	           << "current: " << mu_0 * currentj.z << endl;
+		   return;
+	    }
 	    potential[xindex][yindex][zindex].z = analyzedpoint;
 	    
 	    zindex++;
@@ -917,8 +932,8 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
       }
       xindex++;
     }
-    
     */
+    
     
     hxx->Write();
     hyx->Write();
