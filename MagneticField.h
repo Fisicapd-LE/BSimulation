@@ -8,7 +8,7 @@ class MagneticField
   
 public:
   
-  MagneticField(double xsyst, double ysyst, double zsyst, double xsol, double ysol, double zsol, double delta, double current, long ninteractions);
+  MagneticField(double xsyst, double ysyst, double zsyst, double xsol, double ysol, double zsol, double delta, double current, double convergence_rate, double max_time);
   MagneticField(std::string in_name);
   virtual ~MagneticField();
   
@@ -91,7 +91,9 @@ private:
   void PotentialInitialization();
   
   //variabili per l'algoritmo numerico
-  long ninteractions;
+//   long ninteractions;
+  double convergence_rate;
+  double max_time;
   
   bool pot_computed;		//se falsa, non è stato calcolato il campo magnetico
   

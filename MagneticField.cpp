@@ -10,9 +10,10 @@ using namespace std;
 
 #include "TFile.h"
 #include "TH2F.h"
+#include "TH3F.h"
 
 
-MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xsol, double ysol, double zsol, double delta, double current, long ninteractions):
+MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xsol, double ysol, double zsol, double delta, double current, double convergence_rate, double max_time):
   xsyst(xsyst),
   ysyst(ysyst),
   zsyst(zsyst),
@@ -21,7 +22,9 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
   zsol(zsol),
   delta(delta),
   current(current),
-  ninteractions(ninteractions),
+//   ninteractions(ninteractions),
+  convergence_rate(convergence_rate),
+  max_time(60 * max_time),
   mu_0(1),
   verboso(true),
   co(true),
@@ -384,9 +387,10 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     time_t beginning = time(NULL);
     
     Vector3D currentj;
+    double maxdiff; 	//serve per controllare che sia arrivato a convergenza
     
     if(verboso) cout << "Inizio computazione del potenziale vettore..." << endl;
-    for(unsigned int i = 0; i < ninteractions; i++)
+    for(unsigned int i = 0; i >= 0; i++)
     {
       
       xindex = xborder;
@@ -601,15 +605,66 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
 	}
 	xindex++;
       }
-      if(i == ninteractions * 0.1) cout << "10% of the process" << endl;
-      if(i == ninteractions * 0.2) cout << "20% of the process" << endl;
-      if(i == ninteractions * 0.3) cout << "30% of the process" << endl;
-      if(i == ninteractions * 0.4) cout << "40% of the process" << endl;
-      if(i == ninteractions * 0.5) cout << "50% of the process" << endl;
-      if(i == ninteractions * 0.6) cout << "60% of the process" << endl;
-      if(i == ninteractions * 0.7) cout << "70% of the process" << endl;
-      if(i == ninteractions * 0.8) cout << "80% of the process" << endl;
-      if(i == ninteractions * 0.9) cout << "90% of the process" << endl;
+      
+      //check for convergence
+      xindex = xborder;
+      yindex = yborder;
+      zindex = zborder;
+      
+      if(i%100 == 0 )
+      { 
+	maxdiff = 0;
+	while(xindex < xsteps)
+	{
+	  yindex = yborder;
+	  while(yindex < ysteps)
+	  {
+	    zindex = zborder;
+	    while(zindex < zsteps)
+	    {
+	      if(abs(potential[xindex][yindex][zindex].x - field[xindex][yindex][zindex].x)/potential[xindex][yindex][zindex].x > maxdiff)
+		maxdiff = abs(potential[xindex][yindex][zindex].x - field[xindex][yindex][zindex].x)/potential[xindex][yindex][zindex].x;
+	      if(abs(potential[xindex][yindex][zindex].y - field[xindex][yindex][zindex].y)/potential[xindex][yindex][zindex].y > maxdiff)
+		maxdiff = abs(potential[xindex][yindex][zindex].y - field[xindex][yindex][zindex].y)/potential[xindex][yindex][zindex].y;
+	      if(abs(potential[xindex][yindex][zindex].z - field[xindex][yindex][zindex].z)/potential[xindex][yindex][zindex].z > maxdiff)
+		maxdiff = abs(potential[xindex][yindex][zindex].z - field[xindex][yindex][zindex].z)/potential[xindex][yindex][zindex].z;
+	      zindex++;
+	    }
+	    yindex++;
+	  }
+	  xindex++;
+	}
+	time_t end = time(NULL);
+	
+        if(maxdiff < convergence_rate)
+        {
+	  cout << "Process succesfully converged after " << i << " interactions!" << endl;
+	  if(verboso) cout << "Tempo di calcolo = " << difftime(end, beginning) << " s " << endl;
+	
+	  pot_computed = true;
+	  return;
+        }
+        if(difftime(end, beginning) > max_time)
+	{
+	  cout << "Process reached maximum time: convergence at " << maxdiff * 100 << " %" << endl;
+	  cout << "Process stopped after " << i << " interactions" << endl;
+	  
+	  pot_computed = true;
+	  return;
+	}
+	
+      }
+      
+      
+//       if(i == ninteractions * 0.1) cout << "10% of the process" << endl;
+//       if(i == ninteractions * 0.2) cout << "20% of the process" << endl;
+//       if(i == ninteractions * 0.3) cout << "30% of the process" << endl;
+//       if(i == ninteractions * 0.4) cout << "40% of the process" << endl;
+//       if(i == ninteractions * 0.5) cout << "50% of the process" << endl;
+//       if(i == ninteractions * 0.6) cout << "60% of the process" << endl;
+//       if(i == ninteractions * 0.7) cout << "70% of the process" << endl;
+//       if(i == ninteractions * 0.8) cout << "80% of the process" << endl;
+//       if(i == ninteractions * 0.9) cout << "90% of the process" << endl;
     }
     
     time_t end = time(NULL);
@@ -623,7 +678,7 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
   {
     //stima del campo magnetico a partire dal potenziale vettore appena calcolato
     
-    if(pot_computed == false) ComputePotential();
+    if(pot_computed == false) ComputePotential();		//TODO va rimesso
     
     if(verboso) cout << "Inizio calcolo numerico del rotore..." << endl;
     
@@ -946,6 +1001,39 @@ MagneticField::MagneticField(double xsyst, double ysyst, double zsyst, double xs
     hxz->Write();
     hyz->Write();
     hzz->Write();
+    
+    
+    //prova con il TH3
+    TH3F * hx = new TH3F("hx", "MagneticField x", xsteps+1, xborder, int((xsteps+1)/10), ysteps+1, yborder, int((xsteps+1)/10), zsteps+1, zborder, int((xsteps+1)/10));
+    TH3F * hy = new TH3F("hy", "MagneticField y", xsteps+1, xborder, int((xsteps+1)/10), ysteps+1, yborder, int((xsteps+1)/10), zsteps+1, zborder, int((xsteps+1)/10));
+    TH3F * hz = new TH3F("hz", "MagneticField z", xsteps+1, xborder, int((xsteps+1)/10), ysteps+1, yborder, int((xsteps+1)/10), zsteps+1, zborder, int((xsteps+1)/10));
+    
+    xindex = xborder;
+    yindex = yborder;
+    zindex = zborder;
+    
+    while(xindex < xsteps)
+    {
+      yindex = yborder;
+      while(yindex < ysteps)
+      {
+	zindex = zborder;
+	while(zindex < zsteps)
+	{
+	  hx->Fill(xindex +1, yindex+1, zindex+1, field[xindex][yindex][zindex].x);
+	  hy->Fill(xindex +1, yindex+1, zindex+1, field[xindex][yindex][zindex].y);
+	  hz->Fill(xindex +1, yindex+1, zindex+1, field[xindex][yindex][zindex].z);  
+	  zindex++;
+	}
+	yindex++;
+      }
+      xindex++;
+    }
+    
+    hx->Write();
+    hy->Write();
+    hz->Write();
+    
     
     outfile->Close();
     delete outfile;
